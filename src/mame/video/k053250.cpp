@@ -26,7 +26,7 @@ void k053250_device::unpack_nibbles()
 {
 	m_unpacked_rom.resize(m_rom.length()*2);
 
-	for (int i = 0; i < m_rom.length(); i++)
+	for(int i=0; i < m_rom.length(); i++)
 	{
 		m_unpacked_rom[2*i] = m_rom[i] >> 4;
 		m_unpacked_rom[2*i+1] = m_rom[i] & 0xf;
@@ -308,7 +308,7 @@ void k053250_device::draw( bitmap_rgb32 &bitmap, const rectangle &cliprect, int 
 		dst_wrapmask = ~0;  // scanlines don't seem to wrap horizontally in normal orientation
 		passes = 1;         // draw scanline in a single pass
 	}
-	else  // orientaion with X and Y parameters switched
+	else  // orientation with X and Y parameters switched
 	{
 		line_start = dst_minx;          // the first scanline starts at the minimum X clip location
 		line_end   = dst_maxx;          // the last scanline ends at the maximum X clip location
@@ -397,7 +397,7 @@ void k053250_device::draw( bitmap_rgb32 &bitmap, const rectangle &cliprect, int 
 			    bitmap       : pointer to a MAME bitmap as the render target
 			    pal_ptr      : pointer to the palette's physical location relative to the scanline
 			    pix_ptr      : pointer to the physical start location of source pixels in ROM
-			    cliprect     : pointer to a rectangle structue which describes the visible area of the target bitmap
+			    cliprect     : pointer to a rectangle structure which describes the visible area of the target bitmap
 			    line_pos     : scanline render position relative to the target bitmap
 			                   should be a Y offset to the target bitmap in normal orientaion,
 			                   or an X offset to the target bitmap if X,Y are swapped
@@ -460,4 +460,69 @@ WRITE16_MEMBER(k053250_device::ram_w)
 READ16_MEMBER(k053250_device::rom_r)
 {
 	return m_rom[0x80000 * m_regs[6] + 0x800 * m_regs[7] + offset/2];
+}
+
+void k053250_device::bitmap_update(bitmap_ind16 *bcolor, bitmap_ind16 *battr, const rectangle &cliprect)
+{
+	logerror("mode %x %c%c%c%c\n", m_regs[4] >> 5,
+			 m_regs[4] & 0x10 ? 'y' : '-',
+			 m_regs[4] & 0x08 ? 'x' : '-',
+			 m_regs[4] & 0x04 ? 'w' : '-',
+			 m_regs[4] & 0x01 ? 's' : '-');
+
+	u16 dx = (m_regs[0] << 8) | m_regs[1];
+	u16 dy = (m_regs[2] << 8) | m_regs[3];
+
+	u32 mask = m_unpacked_rom.size() - 1;
+
+	u16 base_size = 0x100 << ((m_regs[4] >> 5) & 3);
+
+	if(base_size == 0x800)
+		base_size = 0x400;
+
+	u16 pre_mask  = m_regs[4] & 0x80 ? 0x1ff : 0x3ff;
+	u16 post_mask = base_size - 1;
+	u16 clip_mask = ~post_mask;
+
+	if(m_regs[4] & 0x04)
+		clip_mask = 0;
+
+	for(int y = cliprect.min_y; y <= cliprect.max_y; y++) {
+		u16 *pc = &bcolor->pix16(y, cliprect.min_x);
+		u16 *pa = &battr->pix16(y, cliprect.min_x);
+		for(int x = cliprect.min_x; x <= cliprect.max_x; x++) {
+			u32 c1, c2;
+			u32 cx = m_regs[4] & 0x08 ? x ^ 0x1ff : x;
+			u32 cy = m_regs[4] & 0x10 ? y ^ 0x0ff : y;
+
+			if(m_regs[4] & 0x01) {
+				c1 = cy + dy;
+				c2 = cx + dx;
+			} else {
+				c1 = cx + dx;
+				c2 = cy + dy;
+			}
+
+
+			u32 off = (c1 & 0x1ff) << 2;
+
+			u16 prco = m_buffer[m_page][off++];
+			u16 roff = m_buffer[m_page][off++];
+			u16 zoom = m_buffer[m_page][off++];
+			u16 posx = (c2 + m_buffer[m_page][off]) & pre_mask;
+			posx = (posx * zoom) >> 6;
+
+			bool keep = !(posx & clip_mask);
+
+			if(keep) {
+				posx &= post_mask;
+				u8 pix = m_unpacked_rom[((roff << 8) | posx) & mask];
+				*pa++ = prco >> 5;
+				*pc++ = ((prco & 0x1f) << 4) | pix;
+			} else {
+				*pa++ = 0x3f;
+				*pc++ = 0;
+			}
+		}
+	}
 }

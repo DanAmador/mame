@@ -9,6 +9,29 @@
 //  Konami 053250 road generator
 //
 
+/*
+
+Register map:
+
+     7   6   5   4   3   2   1   0
++0   .   .   .   .   .   .   .   .
++1   -----------------------------
++2   .   .   .   .   .   .   .   .
++3   -----------------------------
++4   ---mode--  fy  fx  sc dma  sw
++5   .   .   .   .   .   .   .   .
++6   .   .   .   .   .   .   -----
++7   -------------cha-------------
+
+
+Ram block entry:
+
++0   priority (6 bits) / color (5 bits)
++2   offset, in 256-pixels units
++4   zoom
++6   scroll
+
+*/
 
 #define MCFG_K053250_ADD(_tag, _palette_tag, _screen_tag, offx, offy)  \
 	MCFG_DEVICE_ADD(_tag, K053250, 0) \
@@ -32,6 +55,8 @@ public:
 	DECLARE_READ16_MEMBER(rom_r);
 
 	void draw( bitmap_rgb32 &bitmap, const rectangle &cliprect, int colorbase, int flags, bitmap_ind8 &priority_bitmap, int priority );
+
+	void bitmap_update(bitmap_ind16 *bcolor, bitmap_ind16 *battr, const rectangle &cliprect);
 
 protected:
 	// device-level overrides

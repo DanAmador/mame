@@ -112,6 +112,8 @@ ATTR_COLD void MACHINE_CONFIG_NAME(_name)(machine_config &config, device_t *owne
 { \
 	devcb_base *devcb = nullptr; \
 	(void)devcb; \
+	class ksnotifier_t *ksnotifier = nullptr; \
+	(void)ksnotifier; \
 	assert(owner != nullptr);
 
 /**
@@ -126,6 +128,8 @@ ATTR_COLD void MACHINE_CONFIG_NAME(_name)(machine_config &config, device_t *owne
 { \
 	devcb_base *devcb = nullptr; \
 	(void)devcb; \
+	class ksnotifier_t *ksnotifier = nullptr; \
+	(void)ksnotifier; \
 	assert(owner != nullptr); \
 	MACHINE_CONFIG_NAME(_base)(config, owner, device);
 
@@ -142,9 +146,11 @@ ATTR_COLD void _name(machine_config &config) \
 	device_t *const owner = this; \
 	device_t *device = nullptr; \
 	devcb_base *devcb = nullptr; \
+	class ksnotifier_t *ksnotifier = nullptr; \
 	(void)owner; \
 	(void)device; \
 	(void)devcb; \
+	(void)ksnotifier;
 
 /**
 @def MACHINE_CONFIG_END
