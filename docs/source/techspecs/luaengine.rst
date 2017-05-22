@@ -105,7 +105,7 @@ This will draw some useless art on the screen. However, when unpausing the game,
 
 ::
 
-    > emu.sethook(draw_hud, "frame")
+    > emu.register_frame_done(draw_hud, "frame")
 
 All colors are expected in ARGB format (32b unsigned), while screen origin (0,0) normally corresponds to the top-left corner.
 
@@ -148,4 +148,3 @@ On some of them, you can also inspect and manipulate memory and state:
     program
     > mem = cpu.spaces["program"] 
     > print(mem:read_i8(0xC000))
-    41
